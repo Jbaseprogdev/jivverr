@@ -16,23 +16,31 @@ export default function Auth({ user, setUser }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        console.log('Auth component: Starting initialization...');
         await firebaseAuthService.init();
+        console.log('Auth component: Firebase auth service initialized successfully');
         
         // Set up auth state listener
         const unsubscribe = firebaseAuthService.onAuthStateChanged((user) => {
+          console.log('Auth component: Auth state changed:', user ? 'User logged in' : 'No user');
           setUser(user);
         });
+        
+        console.log('Auth component: Auth state listener set up successfully');
         
         // Cleanup on unmount
         return unsubscribe;
       } catch (error) {
-        console.error('Error initializing auth:', error);
-        setError('Failed to initialize authentication. Please refresh the page.');
+        console.error('Auth component: Error initializing auth:', error);
+        setError(`Failed to initialize authentication: ${error.message}. Please refresh the page.`);
       }
     };
 
     if (typeof window !== 'undefined') {
+      console.log('Auth component: Window detected, starting auth initialization...');
       initAuth();
+    } else {
+      console.log('Auth component: Not in browser environment, skipping auth initialization');
     }
   }, [setUser]);
 
@@ -300,6 +308,17 @@ export default function Auth({ user, setUser }) {
             <Phone className="w-5 h-5" />
             Sign in with Phone
           </button>
+
+          {/* Back to Email Auth */}
+          {/* Troubleshooting Link */}
+          <div className="text-center mt-4">
+            <a
+              href="/reset-auth"
+              className="text-neutral-500 hover:text-neutral-700 text-xs transition-colors"
+            >
+              Having trouble? Reset authentication
+            </a>
+          </div>
         </div>
 
         {/* Features */}

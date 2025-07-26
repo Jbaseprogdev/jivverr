@@ -32,20 +32,24 @@ class FirebaseAuthService {
     try {
       console.log('FirebaseAuthService: Getting Firebase app...');
       const app = getFirebaseApp();
+      console.log('FirebaseAuthService: Firebase app retrieved:', app.name);
+      
       console.log('FirebaseAuthService: Getting auth instance...');
       this.auth = getAuth(app);
-      console.log('FirebaseAuthService: Auth instance created:', this.auth);
+      console.log('FirebaseAuthService: Auth instance created successfully');
       
-      // Set persistence to LOCAL (survives browser restarts)
-      console.log('FirebaseAuthService: Setting persistence...');
-      await this.auth.setPersistence('local');
-      console.log('FirebaseAuthService: Persistence set successfully');
+      // Ensure auth is properly initialized
+      if (!this.auth) {
+        throw new Error('Failed to create Firebase Auth instance');
+      }
       
       this.isInitialized = true;
       console.log('FirebaseAuthService: Initialization complete');
       return this.auth;
     } catch (error) {
       console.error('Firebase Auth initialization error:', error);
+      this.isInitialized = false;
+      this.auth = null;
       throw error;
     }
   }
