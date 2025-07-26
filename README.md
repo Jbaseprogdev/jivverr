@@ -1,6 +1,6 @@
-# Medalyzer Web
+# Jivverr
 
-This is the Vercel-ready web version of the Medalyzer App - an AI-powered medical diagnosis explanation tool.
+This is the Vercel-ready web version of Jivverr - an AI-powered medical diagnosis explanation tool.
 
 ## Features
 - 🔐 Firebase Authentication (Sign up/Sign in)
@@ -71,7 +71,7 @@ npm start
 ## Project Structure
 
 ```
-medalyzer_vercel_demo/
+jivverr/
 ├── components/          # React components
 │   ├── Auth.js         # Authentication component
 │   ├── Dashboard.js    # Analytics dashboard

@@ -1,6 +1,6 @@
 # Domain Setup Guide for jivverr.com
 
-This guide will help you configure the `jivverr.com` domain for your Medalyzer app on Vercel.
+This guide will help you configure the `jivverr.com` domain for your Jivverr app on Vercel.
 
 ## Prerequisites
 
@@ -127,4 +127,4 @@ After domain setup:
 
 ---
 
-**Note**: This setup ensures your Medalyzer app is accessible at `jivverr.com` with proper security, performance, and SEO optimization. 
+**Note**: This setup ensures your Jivverr app is accessible at `jivverr.com` with proper security, performance, and SEO optimization. 

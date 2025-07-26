@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "name": "medalyzer-web",
+  "name": "jivverr",
   "domains": ["jivverr.com", "www.jivverr.com"],
   "buildCommand": "npm run build",
   "outputDirectory": ".next",

@@ -107,7 +107,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <Stethoscope className="w-8 h-8 text-primary-600" />
-              <h1 className="text-xl font-bold text-gray-900">Medalyzer Web</h1>
+              <h1 className="text-xl font-bold text-gray-900">Jivverr</h1>
             </div>
             
             <div className="flex items-center gap-4">
@@ -127,7 +127,7 @@ export default function Home() {
           <div className="text-center py-12">
             <Brain className="w-16 h-16 text-primary-600 mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome to Medalyzer Web
+              Welcome to Jivverr
             </h2>
             <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
               Get simplified explanations of medical diagnoses and symptoms. 

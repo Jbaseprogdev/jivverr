@@ -1,8 +1,10 @@
 {
-  "name": "jivverr-medalyzer",
+  "name": "jivverr",
   "version": "0.1.0",
   "private": true,
   "homepage": "https://jivverr.com",
+  "description": "Jivverr - AI-powered medical diagnosis explanation tool",
+  "author": "Jivverr Team",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
