@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { useState, useEffect } from 'react';
 import { User, Mail, Lock, LogOut } from 'lucide-react';
 
 export default function Auth({ user, setUser }) {
@@ -8,15 +7,37 @@ export default function Auth({ user, setUser }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [auth, setAuth] = useState(null);
 
-  const auth = getAuth();
+  // Initialize Firebase auth on client side
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const { getAuth } = await import('firebase/auth');
+        const { app } = await import('../firebase/init');
+        if (app) {
+          setAuth(getAuth(app));
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      initAuth();
+    }
+  }, []);
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    if (!auth) return;
+    
     setLoading(true);
     setError('');
 
     try {
+      const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+      
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
       } else {
@@ -30,7 +51,10 @@ export default function Auth({ user, setUser }) {
   };
 
   const handleSignOut = async () => {
+    if (!auth) return;
+    
     try {
+      const { signOut } = await import('firebase/auth');
       await signOut(auth);
     } catch (error) {
       console.error('Error signing out:', error);
@@ -100,7 +124,7 @@ export default function Auth({ user, setUser }) {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !auth}
           className="btn-primary w-full flex items-center justify-center gap-2"
         >
           {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}

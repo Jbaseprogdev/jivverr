@@ -1,20 +1,66 @@
 import { useState, useEffect } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { getAuth } from 'firebase/auth';
 import { Stethoscope, Shield, Brain } from 'lucide-react';
-import Auth from '../components/Auth';
-import DiagnosisInput from '../components/DiagnosisInput';
-import Dashboard from '../components/Dashboard';
+
+// Dynamic imports to avoid SSR issues
+let useAuthState = null;
+let getAuth = null;
+let Auth = null;
+let DiagnosisInput = null;
+let Dashboard = null;
 
 export default function Home() {
-  const auth = getAuth();
-  const [user, loading] = useAuthState(auth);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [analyses, setAnalyses] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [componentsLoaded, setComponentsLoaded] = useState(false);
+
+  // Load components and Firebase on client side
+  useEffect(() => {
+    const loadComponents = async () => {
+      try {
+        // Dynamic imports
+        const { useAuthState: authHook } = await import('react-firebase-hooks/auth');
+        const { getAuth: getAuthFn } = await import('firebase/auth');
+        const AuthComponent = (await import('../components/Auth')).default;
+        const DiagnosisInputComponent = (await import('../components/DiagnosisInput')).default;
+        const DashboardComponent = (await import('../components/Dashboard')).default;
+
+        useAuthState = authHook;
+        getAuth = getAuthFn;
+        Auth = AuthComponent;
+        DiagnosisInput = DiagnosisInputComponent;
+        Dashboard = DashboardComponent;
+
+        setComponentsLoaded(true);
+      } catch (error) {
+        console.error('Error loading components:', error);
+        setLoading(false);
+      }
+    };
+
+    loadComponents();
+  }, []);
+
+  // Initialize Firebase auth after components are loaded
+  useEffect(() => {
+    if (!componentsLoaded) return;
+
+    try {
+      const auth = getAuth();
+      const [user, authLoading] = useAuthState(auth);
+      
+      setUser(user);
+      setLoading(authLoading);
+    } catch (error) {
+      console.error('Firebase auth error:', error);
+      setLoading(false);
+    }
+  }, [componentsLoaded]);
 
   // Load analyses from localStorage
   useEffect(() => {
-    if (user) {
+    if (user && typeof window !== 'undefined') {
       const savedAnalyses = localStorage.getItem(`analyses_${user.uid}`);
       if (savedAnalyses) {
         setAnalyses(JSON.parse(savedAnalyses));
@@ -24,7 +70,7 @@ export default function Home() {
 
   // Save analyses to localStorage
   useEffect(() => {
-    if (user && analyses.length > 0) {
+    if (user && analyses.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem(`analyses_${user.uid}`, JSON.stringify(analyses));
     }
   }, [analyses, user]);
@@ -33,7 +79,7 @@ export default function Home() {
     setAnalyses(prev => [analysis, ...prev]);
   };
 
-  if (loading) {
+  if (loading || !componentsLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -60,7 +106,7 @@ export default function Home() {
                 <Shield className="w-4 h-4" />
                 <span>Secure & Private</span>
               </div>
-              <Auth user={user} setUser={() => {}} />
+              {Auth && <Auth user={user} setUser={setUser} />}
             </div>
           </div>
         </div>
@@ -123,11 +169,11 @@ export default function Home() {
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'dashboard' && (
+            {activeTab === 'dashboard' && Dashboard && (
               <Dashboard analyses={analyses} />
             )}
             
-            {activeTab === 'analysis' && (
+            {activeTab === 'analysis' && DiagnosisInput && (
               <div className="max-w-2xl mx-auto">
                 <DiagnosisInput onAnalysisComplete={handleAnalysisComplete} />
               </div>
