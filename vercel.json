@@ -1,1 +1,36 @@
-{ "framework": "nextjs" }
+{
+  "framework": "nextjs",
+  "name": "medalyzer-web",
+  "domains": ["jivverr.com", "www.jivverr.com"],
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "regions": ["iad1"],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/medalyzer",
+      "destination": "/",
+      "permanent": false
+    }
+  ]
+}

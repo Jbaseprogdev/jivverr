@@ -118,11 +118,23 @@ medalyzer_vercel_demo/
 
 ## Deployment
 
-### Vercel (Recommended)
+### Vercel Deployment with Custom Domain
 1. Push your code to GitHub
 2. Connect your repository to Vercel
 3. Add environment variables for Firebase config
-4. Deploy automatically
+4. Configure custom domain `jivverr.com` in Vercel dashboard
+5. Deploy automatically on push to main branch
+
+The app will be available at:
+- **Primary Domain**: https://jivverr.com
+- **WWW Subdomain**: https://www.jivverr.com
+- **Vercel URL**: Your default Vercel URL (fallback)
+
+### Domain Configuration
+The app is configured to work with the `jivverr.com` domain. Make sure to:
+1. Add the domain in your Vercel project settings
+2. Configure DNS records as instructed by Vercel
+3. Enable HTTPS (automatic with Vercel)
 
 ### Manual Vercel Deployment
 ```bash
