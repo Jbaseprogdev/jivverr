@@ -1,99 +1,103 @@
 import { useState, useEffect } from 'react';
 import { 
-  BarChart3, 
+  TrendingUp, 
+  TrendingDown, 
+  Activity, 
   Clock, 
-  AlertTriangle, 
-  CheckCircle, 
-  TrendingUp,
-  Activity,
-  Heart,
+  Target, 
+  Award,
+  Plus,
+  Search,
+  Filter,
   Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  FileText,
-  Users
+  BarChart3,
+  PieChart,
+  Users,
+  Shield,
+  Heart,
+  Brain,
+  Zap
 } from 'lucide-react';
 
-export default function Dashboard({ analyses = [] }) {
+export default function Dashboard({ user }) {
+  const [recentAnalyses, setRecentAnalyses] = useState([
+    {
+      id: 1,
+      symptoms: ['Headache', 'Fever', 'Fatigue'],
+      diagnosis: 'Common Cold',
+      confidence: 94,
+      date: '2024-01-26',
+      severity: 'low'
+    },
+    {
+      id: 2,
+      symptoms: ['Chest Pain', 'Shortness of Breath'],
+      diagnosis: 'Anxiety',
+      confidence: 87,
+      date: '2024-01-25',
+      severity: 'medium'
+    },
+    {
+      id: 3,
+      symptoms: ['Joint Pain', 'Stiffness'],
+      diagnosis: 'Arthritis',
+      confidence: 92,
+      date: '2024-01-24',
+      severity: 'high'
+    }
+  ]);
+
   const [stats, setStats] = useState({
-    total: 0,
-    recent: 0,
-    moderate: 0,
-    mild: 0,
-    trend: 0
+    totalAnalyses: 47,
+    accuracy: 94.2,
+    avgResponseTime: 2.3,
+    healthScore: 87
   });
 
-  useEffect(() => {
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    
-    const recent = analyses.filter(analysis => 
-      new Date(analysis.timestamp) > oneWeekAgo
-    ).length;
-    
-    const previousWeek = analyses.filter(analysis => {
-      const date = new Date(analysis.timestamp);
-      return date > twoWeeksAgo && date <= oneWeekAgo;
-    }).length;
-    
-    const moderate = analyses.filter(analysis => 
-      analysis.severity === 'moderate'
-    ).length;
-    
-    const mild = analyses.filter(analysis => 
-      analysis.severity === 'mild'
-    ).length;
-
-    const trend = previousWeek > 0 ? ((recent - previousWeek) / previousWeek) * 100 : 0;
-
-    setStats({
-      total: analyses.length,
-      recent,
-      moderate,
-      mild,
-      trend
-    });
-  }, [analyses]);
-
-  const getSeverityIcon = (severity) => {
-    return severity === 'moderate' ? 
-      <AlertTriangle className="w-4 h-4 text-warning-500" /> : 
-      <CheckCircle className="w-4 h-4 text-success-500" />;
-  };
+  const [insights, setInsights] = useState([
+    {
+      id: 1,
+      type: 'trend',
+      title: 'Health Trend Improving',
+      description: 'Your overall health score has increased by 12% this month',
+      icon: TrendingUp,
+      color: 'success'
+    },
+    {
+      id: 2,
+      type: 'recommendation',
+      title: 'Stay Hydrated',
+      description: 'Based on your symptoms, consider increasing water intake',
+      icon: Heart,
+      color: 'primary'
+    },
+    {
+      id: 3,
+      type: 'alert',
+      title: 'Follow-up Recommended',
+      description: 'Schedule a follow-up for your recent chest pain analysis',
+      icon: Shield,
+      color: 'warning'
+    }
+  ]);
 
   const getSeverityColor = (severity) => {
-    return severity === 'moderate' ? 'text-warning-600' : 'text-success-600';
+    switch (severity) {
+      case 'low': return 'success';
+      case 'medium': return 'warning';
+      case 'high': return 'danger';
+      default: return 'neutral';
+    }
   };
 
-  const getSeverityBadge = (severity) => {
-    return severity === 'moderate' ? 
-      <span className="status-warning">Moderate</span> : 
-      <span className="status-success">Mild</span>;
+  const getSeverityIcon = (severity) => {
+    switch (severity) {
+      case 'low': return '🟢';
+      case 'medium': return '🟡';
+      case 'high': return '🔴';
+      default: return '⚪';
+    }
   };
-
-  const StatCard = ({ title, value, icon: Icon, color, trend, subtitle }) => (
-    <div className="card-hover">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 bg-${color}-100 rounded-xl flex items-center justify-center`}>
-            <Icon className={`w-6 h-6 text-${color}-600`} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
-          </div>
-        </div>
-        {trend !== undefined && (
-          <div className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-            <span className="font-medium">{Math.abs(trend)}%</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-8">
@@ -101,184 +105,260 @@ export default function Dashboard({ analyses = [] }) {
       <div className="card-medical">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 font-display mb-2">Welcome back!</h1>
-            <p className="text-gray-600">Here's your health analysis overview</p>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+              Welcome back, {user?.displayName || 'User'}! 👋
+            </h1>
+            <p className="text-neutral-600">
+              Here's your health overview for today
+            </p>
           </div>
-          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-success-50 rounded-full">
-            <Activity className="w-4 h-4 text-success-600" />
-            <span className="text-sm font-medium text-success-700">All systems healthy</span>
+          <div className="hidden md:flex items-center gap-3">
+            <div className="health-indicator good"></div>
+            <span className="text-sm font-semibold text-success-600">Good Health</span>
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Grid */}
       <div className="data-grid">
-        <StatCard
-          title="Total Analyses"
-          value={stats.total}
-          icon={FileText}
-          color="primary"
-          subtitle="All time"
-        />
-        
-        <StatCard
-          title="This Week"
-          value={stats.recent}
-          icon={Clock}
-          color="blue"
-          trend={stats.trend}
-          subtitle="vs last week"
-        />
-        
-        <StatCard
-          title="Moderate Cases"
-          value={stats.moderate}
-          icon={AlertTriangle}
-          color="warning"
-          subtitle="Require attention"
-        />
-        
-        <StatCard
-          title="Mild Cases"
-          value={stats.mild}
-          icon={CheckCircle}
-          color="success"
-          subtitle="Under control"
-        />
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-medical rounded-xl flex items-center justify-center">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            <div className="stat-trend positive">
+              <TrendingUp className="w-4 h-4" />
+              <span>+12%</span>
+            </div>
+          </div>
+          <div className="stat-number">{stats.totalAnalyses}</div>
+          <div className="stat-label">Total Analyses</div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-success rounded-xl flex items-center justify-center">
+              <Target className="w-6 h-6 text-white" />
+            </div>
+            <div className="stat-trend positive">
+              <TrendingUp className="w-4 h-4" />
+              <span>+2.1%</span>
+            </div>
+          </div>
+          <div className="stat-number">{stats.accuracy}%</div>
+          <div className="stat-label">Accuracy Rate</div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-warning rounded-xl flex items-center justify-center">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
+            <div className="stat-trend negative">
+              <TrendingDown className="w-4 h-4" />
+              <span>-0.3s</span>
+            </div>
+          </div>
+          <div className="stat-number">{stats.avgResponseTime}s</div>
+          <div className="stat-label">Avg Response Time</div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-danger rounded-xl flex items-center justify-center">
+              <Award className="w-6 h-6 text-white" />
+            </div>
+            <div className="stat-trend positive">
+              <TrendingUp className="w-4 h-4" />
+              <span>+5%</span>
+            </div>
+          </div>
+          <div className="stat-number">{stats.healthScore}</div>
+          <div className="stat-label">Health Score</div>
+        </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card-hover">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary-600" />
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-900">New Analysis</h3>
-              <p className="text-sm text-gray-600">Add symptoms & diagnosis</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card-hover">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-success-100 rounded-xl flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-success-600" />
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-900">Schedule Checkup</h3>
-              <p className="text-sm text-gray-600">Book appointment</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card-hover">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-warning-100 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-warning-600" />
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-900">Share Report</h3>
-              <p className="text-sm text-gray-600">With healthcare provider</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Analyses */}
       <div className="card-elevated">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="w-6 h-6 text-primary-600" />
-            <h3 className="text-xl font-semibold text-gray-900">Recent Analyses</h3>
-          </div>
-          <button className="btn-ghost text-sm">View All</button>
+        <h2 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button className="btn-primary flex items-center justify-center gap-3 py-4">
+            <Plus className="w-5 h-5" />
+            New Analysis
+          </button>
+          <button className="btn-secondary flex items-center justify-center gap-3 py-4">
+            <Search className="w-5 h-5" />
+            Search History
+          </button>
+          <button className="btn-ghost flex items-center justify-center gap-3 py-4 border-2 border-dashed border-neutral-300 hover:border-primary-300">
+            <Calendar className="w-5 h-5" />
+            Schedule Checkup
+          </button>
         </div>
-        
-        {analyses.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No analyses yet</h3>
-            <p className="text-gray-600 mb-6">Start by adding your first medical analysis to get insights</p>
-            <button className="btn-primary">Start First Analysis</button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {analyses.slice(0, 5).map((analysis, index) => (
-              <div key={index} className="analysis-result p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    {getSeverityIcon(analysis.severity)}
-                    <div>
-                      {getSeverityBadge(analysis.severity)}
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(analysis.timestamp).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <button className="btn-ghost text-xs">View Details</button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Symptoms</p>
-                    <p className="text-sm text-gray-600 line-clamp-2">{analysis.symptoms}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Diagnosis</p>
-                    <p className="text-sm text-gray-600">{analysis.diagnosis}</p>
-                  </div>
-                </div>
-                
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-700 mb-1">AI Explanation</p>
-                  <p className="text-sm text-gray-600 line-clamp-2">{analysis.explanation}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Health Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <div className="flex items-center gap-3 mb-4">
-            <TrendingUp className="w-5 h-5 text-primary-600" />
-            <h3 className="font-semibold text-gray-900">Health Trends</h3>
+        <div className="card-elevated">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-neutral-900">Health Insights</h2>
+            <button className="btn-icon">
+              <Filter className="w-4 h-4" />
+            </button>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-success-50 rounded-lg">
-              <span className="text-sm font-medium text-success-700">Mild cases trend</span>
-              <span className="text-sm text-success-600">+12% this month</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-warning-50 rounded-lg">
-              <span className="text-sm font-medium text-warning-700">Moderate cases</span>
-              <span className="text-sm text-warning-600">-5% this month</span>
-            </div>
+          <div className="space-y-4">
+            {insights.map((insight) => {
+              const Icon = insight.icon;
+              return (
+                <div key={insight.id} className="flex items-start gap-3 p-4 bg-neutral-50 rounded-xl">
+                  <div className={`w-10 h-10 bg-${insight.color}-100 rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <Icon className={`w-5 h-5 text-${insight.color}-600`} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-neutral-900 mb-1">{insight.title}</h3>
+                    <p className="text-sm text-neutral-600">{insight.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Analyses */}
+        <div className="card-elevated">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-neutral-900">Recent Analyses</h2>
+            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+              View All
+            </button>
+          </div>
+          <div className="space-y-4">
+            {recentAnalyses.map((analysis) => (
+              <div key={analysis.id} className="p-4 bg-neutral-50 rounded-xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{getSeverityIcon(analysis.severity)}</span>
+                    <h3 className="font-semibold text-neutral-900">{analysis.diagnosis}</h3>
+                  </div>
+                  <span className={`status-${getSeverityColor(analysis.severity)}`}>
+                    {analysis.confidence}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-neutral-600">
+                  <div className="flex flex-wrap gap-1">
+                    {analysis.symptoms.map((symptom, index) => (
+                      <span key={index} className="symptom-tag text-xs">
+                        {symptom}
+                      </span>
+                    ))}
+                  </div>
+                  <span>{analysis.date}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Health Analytics */}
+      <div className="card-elevated">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-neutral-900">Health Analytics</h2>
+          <div className="flex items-center gap-2">
+            <button className="btn-icon">
+              <BarChart3 className="w-4 h-4" />
+            </button>
+            <button className="btn-icon">
+              <PieChart className="w-4 h-4" />
+            </button>
           </div>
         </div>
         
-        <div className="card">
-          <div className="flex items-center gap-3 mb-4">
-            <Heart className="w-5 h-5 text-primary-600" />
-            <h3 className="font-semibold text-gray-900">Health Score</h3>
-          </div>
-          <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-success-400 to-success-600 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl font-bold text-white">85</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Symptom Frequency */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-neutral-900">Most Common Symptoms</h3>
+            <div className="space-y-2">
+              {[
+                { symptom: 'Headache', frequency: 8, percentage: 75 },
+                { symptom: 'Fatigue', frequency: 6, percentage: 60 },
+                { symptom: 'Fever', frequency: 4, percentage: 40 }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm text-neutral-600">{item.symptom}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-2 bg-neutral-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-medical rounded-full"
+                        style={{ width: `${item.percentage}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-xs font-semibold text-neutral-700">{item.frequency}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <p className="text-sm text-gray-600">Excellent health status</p>
+          </div>
+
+          {/* Health Score Trend */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-neutral-900">Health Score Trend</h3>
+            <div className="h-32 flex items-end justify-between gap-1">
+              {[65, 72, 68, 75, 82, 79, 87].map((score, index) => (
+                <div key={index} className="flex-1 flex flex-col items-center">
+                  <div 
+                    className="w-full bg-gradient-medical rounded-t"
+                    style={{ height: `${(score / 100) * 100}%` }}
+                  ></div>
+                  <span className="text-xs text-neutral-500 mt-1">{score}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-neutral-500 text-center">Last 7 days</p>
+          </div>
+
+          {/* AI Performance */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-neutral-900">AI Performance</h3>
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary-600 mb-1">94.2%</div>
+                <div className="text-sm text-neutral-600">Overall Accuracy</div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600">Response Time</span>
+                  <span className="font-semibold">2.3s avg</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600">Confidence</span>
+                  <span className="font-semibold">87% avg</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600">Uptime</span>
+                  <span className="font-semibold text-success-600">99.9%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Assistant Status */}
+      <div className="card-medical">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-medical rounded-xl flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-neutral-900">AI Assistant Status</h3>
+              <p className="text-sm text-neutral-600">Ready to help with your health questions</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="health-indicator good"></div>
+            <span className="text-sm font-semibold text-success-600">Online</span>
           </div>
         </div>
       </div>
