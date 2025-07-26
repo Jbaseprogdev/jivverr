@@ -2,62 +2,93 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import { firebaseConfig } from './config';
 
-// Initialize Firebase only on client side and only once
+// Global variables to track initialization
 let app = null;
 let analytics = null;
+let isInitializing = false;
+let initPromise = null;
 
 // Check if we're on the client side
 const isClient = typeof window !== 'undefined';
 
-if (isClient) {
-  try {
-    // Check if Firebase is already initialized
-    const apps = getApps();
-    if (apps.length === 0) {
-      console.log('Initializing Firebase app...');
-      app = initializeApp(firebaseConfig);
-      console.log('Firebase app initialized:', app.name);
-      
-      // Initialize Analytics if supported
-      isSupported().then(yes => {
-        if (yes) {
-          try {
-            analytics = getAnalytics(app);
-            console.log('Firebase Analytics initialized');
-          } catch (error) {
-            console.warn('Analytics initialization error:', error);
-          }
-        } else {
-          console.log('Analytics not supported in this environment');
-        }
-      }).catch(error => {
-        console.warn('Analytics support check failed:', error);
-      });
-    } else {
-      console.log('Using existing Firebase app:', apps[0].name);
-      app = apps[0];
-      // Try to get existing analytics instance
-      try {
-        analytics = getAnalytics(app);
-        console.log('Using existing Firebase Analytics');
-      } catch (error) {
-        console.warn('Analytics not available:', error);
-      }
-    }
-  } catch (error) {
-    console.error('Firebase initialization error:', error);
-    // Don't throw here, let the getFirebaseApp function handle it
-  }
-}
-
-// Export a function to get the app instance
-export const getFirebaseApp = () => {
+// Initialize Firebase with proper error handling
+const initializeFirebase = async () => {
   if (!isClient) {
     throw new Error('Firebase can only be used on the client side');
   }
-  if (!app) {
-    throw new Error('Firebase app not initialized. Please check your configuration.');
+
+  // If already initialized, return existing app
+  if (app) {
+    return app;
   }
+
+  // If already initializing, wait for the existing promise
+  if (isInitializing && initPromise) {
+    return initPromise;
+  }
+
+  // Start initialization
+  isInitializing = true;
+  initPromise = new Promise(async (resolve, reject) => {
+    try {
+      console.log('Starting Firebase initialization...');
+      
+      // Check if Firebase is already initialized
+      const existingApps = getApps();
+      console.log('Existing Firebase apps:', existingApps.length);
+      
+      if (existingApps.length > 0) {
+        console.log('Using existing Firebase app:', existingApps[0].name);
+        app = existingApps[0];
+      } else {
+        console.log('Initializing new Firebase app...');
+        app = initializeApp(firebaseConfig);
+        console.log('Firebase app initialized:', app.name);
+      }
+      
+      // Initialize Analytics if supported (don't block on this)
+      try {
+        const analyticsSupported = await isSupported();
+        if (analyticsSupported) {
+          analytics = getAnalytics(app);
+          console.log('Firebase Analytics initialized');
+        } else {
+          console.log('Analytics not supported in this environment');
+        }
+      } catch (analyticsError) {
+        console.warn('Analytics initialization failed:', analyticsError);
+        // Don't fail the whole initialization for analytics
+      }
+      
+      console.log('Firebase initialization completed successfully');
+      resolve(app);
+    } catch (error) {
+      console.error('Firebase initialization failed:', error);
+      app = null;
+      analytics = null;
+      reject(error);
+    } finally {
+      isInitializing = false;
+    }
+  });
+
+  return initPromise;
+};
+
+// Export a function to get the app instance
+export const getFirebaseApp = async () => {
+  if (!isClient) {
+    throw new Error('Firebase can only be used on the client side');
+  }
+  
+  if (!app) {
+    await initializeFirebase();
+  }
+  
+  if (!app) {
+    throw new Error('Firebase app failed to initialize. Please check your configuration.');
+  }
+  
   return app;
 };
 
@@ -68,5 +99,13 @@ export const getFirebaseAnalytics = () => {
   }
   return analytics;
 };
+
+// Initialize Firebase immediately if on client side
+if (isClient) {
+  // Initialize Firebase in the background
+  initializeFirebase().catch(error => {
+    console.error('Background Firebase initialization failed:', error);
+  });
+}
 
 export { app, analytics }; 

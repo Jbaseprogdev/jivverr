@@ -27,11 +27,13 @@ class FirebaseAuthService {
 
   // Initialize authentication
   async init() {
-    if (this.isInitialized) return this.auth;
+    if (this.isInitialized && this.auth) return this.auth;
     
     try {
-      console.log('FirebaseAuthService: Getting Firebase app...');
-      const app = getFirebaseApp();
+      console.log('FirebaseAuthService: Starting initialization...');
+      
+      // Get Firebase app with proper async handling
+      const app = await getFirebaseApp();
       console.log('FirebaseAuthService: Firebase app retrieved:', app.name);
       
       console.log('FirebaseAuthService: Getting auth instance...');
