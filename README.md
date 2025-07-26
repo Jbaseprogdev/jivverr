@@ -2,6 +2,8 @@
 
 This is the Vercel-ready web version of Jivverr - an AI-powered medical diagnosis explanation tool.
 
+<!-- Last deployed: 2025-01-26 00:45 UTC -->
+
 ## Features
 - 🔐 Firebase Authentication (Sign up/Sign in)
 - 📝 Diagnosis Input with symptom tracking
