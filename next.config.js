@@ -14,6 +14,22 @@ const nextConfig = {
     };
     return config;
   },
+  // Disable static generation for dynamic pages
+  trailingSlash: false,
+  // Ensure pages are rendered on the server when needed
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
 }
 
 module.exports = nextConfig 

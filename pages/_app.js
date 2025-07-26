@@ -4,24 +4,36 @@ import { useEffect, useState } from 'react';
 // Initialize Firebase only on client side
 let firebaseApp = null;
 
-if (typeof window !== 'undefined') {
-  // Dynamic import to avoid SSR issues
-  import('firebase/app').then(({ initializeApp }) => {
-    import('../firebase/config').then(({ firebaseConfig }) => {
-      try {
-        firebaseApp = initializeApp(firebaseConfig);
-      } catch (error) {
-        console.warn('Firebase already initialized or config error:', error);
-      }
-    });
-  });
-}
-
 export default function App({ Component, pageProps }) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    
+    // Initialize Firebase only on client side
+    if (typeof window !== 'undefined') {
+      // Dynamic import to avoid SSR issues
+      import('firebase/app').then(({ initializeApp }) => {
+        import('../firebase/config').then(({ firebaseConfig }) => {
+          try {
+            // Check if Firebase is already initialized
+            const { getApps } = require('firebase/app');
+            const apps = getApps();
+            if (apps.length === 0) {
+              firebaseApp = initializeApp(firebaseConfig);
+            } else {
+              firebaseApp = apps[0];
+            }
+          } catch (error) {
+            console.warn('Firebase already initialized or config error:', error);
+          }
+        }).catch(error => {
+          console.warn('Error loading Firebase config:', error);
+        });
+      }).catch(error => {
+        console.warn('Error loading Firebase app:', error);
+      });
+    }
   }, []);
 
   // Show loading state during SSR

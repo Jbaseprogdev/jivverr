@@ -14,9 +14,17 @@ export default function Home() {
   const [analyses, setAnalyses] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [componentsLoaded, setComponentsLoaded] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  // Load components and Firebase on client side
+  // Ensure we're on client side
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Load components and Firebase on client side only
+  useEffect(() => {
+    if (!isClient) return;
+
     const loadComponents = async () => {
       try {
         // Dynamic imports
@@ -40,11 +48,11 @@ export default function Home() {
     };
 
     loadComponents();
-  }, []);
+  }, [isClient]);
 
   // Initialize Firebase auth after components are loaded
   useEffect(() => {
-    if (!componentsLoaded) return;
+    if (!componentsLoaded || !isClient) return;
 
     try {
       const auth = getAuth();
@@ -56,30 +64,31 @@ export default function Home() {
       console.error('Firebase auth error:', error);
       setLoading(false);
     }
-  }, [componentsLoaded]);
+  }, [componentsLoaded, isClient]);
 
   // Load analyses from localStorage
   useEffect(() => {
-    if (user && typeof window !== 'undefined') {
+    if (user && isClient) {
       const savedAnalyses = localStorage.getItem(`analyses_${user.uid}`);
       if (savedAnalyses) {
         setAnalyses(JSON.parse(savedAnalyses));
       }
     }
-  }, [user]);
+  }, [user, isClient]);
 
   // Save analyses to localStorage
   useEffect(() => {
-    if (user && analyses.length > 0 && typeof window !== 'undefined') {
+    if (user && analyses.length > 0 && isClient) {
       localStorage.setItem(`analyses_${user.uid}`, JSON.stringify(analyses));
     }
-  }, [analyses, user]);
+  }, [analyses, user, isClient]);
 
   const handleAnalysisComplete = (analysis) => {
     setAnalyses(prev => [analysis, ...prev]);
   };
 
-  if (loading || !componentsLoaded) {
+  // Show loading state during SSR or while loading
+  if (!isClient || loading || !componentsLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
