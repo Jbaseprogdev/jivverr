@@ -15,7 +15,8 @@ import {
   Shield,
   Activity
 } from 'lucide-react';
-import firebaseAuthService from '../firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
+import { getFirebaseApp } from '../firebase/init';
 
 export default function Layout({ children, user, setUser, activeTab, setActiveTab }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,10 +33,10 @@ export default function Layout({ children, user, setUser, activeTab, setActiveTa
 
   const handleSignOut = async () => {
     try {
-      const result = await firebaseAuthService.signOut();
-      if (!result.success) {
-        console.error('Sign out error:', result.error);
-      }
+      const app = getFirebaseApp();
+      const auth = getAuth(app);
+      await signOut(auth);
+      setUser(null);
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -97,9 +98,7 @@ export default function Layout({ children, user, setUser, activeTab, setActiveTa
                 <div className="flex items-center gap-2 mt-1">
                   <div className="health-indicator good"></div>
                   <p className="text-xs text-neutral-500">Active</p>
-                  {firebaseAuthService.isEmailVerified() && (
-                    <span className="status-success text-xs">✓ Verified</span>
-                  )}
+                  {/* Removed firebaseAuthService.isEmailVerified() */}
                 </div>
               </div>
             </div>
