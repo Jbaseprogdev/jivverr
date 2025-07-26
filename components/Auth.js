@@ -45,9 +45,13 @@ export default function Auth({ user, setUser }) {
       let result;
       
       if (isSignUp) {
+        console.log('Attempting signup with:', { email, password, displayName });
         result = await firebaseAuthService.signUpWithEmail(email, password, displayName);
+        console.log('Signup result:', result);
       } else {
+        console.log('Attempting signin with:', { email, password });
         result = await firebaseAuthService.signInWithEmail(email, password);
+        console.log('Signin result:', result);
       }
       
       if (result.success) {
@@ -56,9 +60,11 @@ export default function Auth({ user, setUser }) {
         setPassword('');
         setDisplayName('');
       } else {
+        console.error('Authentication failed:', result.error);
         setError(result.error.message);
       }
     } catch (error) {
+      console.error('Unexpected error during auth:', error);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);

@@ -30,13 +30,19 @@ class FirebaseAuthService {
     if (this.isInitialized) return this.auth;
     
     try {
+      console.log('FirebaseAuthService: Getting Firebase app...');
       const app = getFirebaseApp();
+      console.log('FirebaseAuthService: Getting auth instance...');
       this.auth = getAuth(app);
+      console.log('FirebaseAuthService: Auth instance created:', this.auth);
       
       // Set persistence to LOCAL (survives browser restarts)
+      console.log('FirebaseAuthService: Setting persistence...');
       await this.auth.setPersistence('local');
+      console.log('FirebaseAuthService: Persistence set successfully');
       
       this.isInitialized = true;
+      console.log('FirebaseAuthService: Initialization complete');
       return this.auth;
     } catch (error) {
       console.error('Firebase Auth initialization error:', error);
@@ -75,16 +81,22 @@ class FirebaseAuthService {
 
   async signUpWithEmail(email, password, displayName = null) {
     try {
+      console.log('FirebaseAuthService: Initializing...');
       await this.init();
+      console.log('FirebaseAuthService: Creating user with email and password...');
       const result = await createUserWithEmailAndPassword(this.auth, email, password);
+      console.log('FirebaseAuthService: User created successfully:', result.user);
       
       // Update profile if display name provided
       if (displayName && result.user) {
+        console.log('FirebaseAuthService: Updating profile with display name...');
         await updateProfile(result.user, { displayName });
+        console.log('FirebaseAuthService: Profile updated successfully');
       }
       
       return { success: true, user: result.user };
     } catch (error) {
+      console.error('FirebaseAuthService: Signup error:', error);
       return { success: false, error: this.formatAuthError(error) };
     }
   }

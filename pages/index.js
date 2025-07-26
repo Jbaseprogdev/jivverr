@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { Stethoscope, Shield, Brain, Heart, Activity } from 'lucide-react';
 
 // Dynamic imports to avoid SSR issues
-let useAuthState = null;
-let getAuth = null;
 let Auth = null;
 let DiagnosisInput = null;
 let Dashboard = null;
 let Layout = null;
+let firebaseAuthService = null;
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -29,19 +28,17 @@ export default function Home() {
     const loadComponents = async () => {
       try {
         // Dynamic imports
-        const { useAuthState: authHook } = await import('react-firebase-hooks/auth');
-        const { getAuth: getAuthFn } = await import('firebase/auth');
         const AuthComponent = (await import('../components/Auth')).default;
         const DiagnosisInputComponent = (await import('../components/DiagnosisInput')).default;
         const DashboardComponent = (await import('../components/Dashboard')).default;
         const LayoutComponent = (await import('../components/Layout')).default;
+        const FirebaseAuthService = (await import('../firebase/auth')).default;
 
-        useAuthState = authHook;
-        getAuth = getAuthFn;
         Auth = AuthComponent;
         DiagnosisInput = DiagnosisInputComponent;
         Dashboard = DashboardComponent;
         Layout = LayoutComponent;
+        firebaseAuthService = FirebaseAuthService;
 
         setComponentsLoaded(true);
       } catch (error) {
@@ -57,16 +54,25 @@ export default function Home() {
   useEffect(() => {
     if (!componentsLoaded || !isClient) return;
 
-    try {
-      const auth = getAuth();
-      const [user, authLoading] = useAuthState(auth);
-      
-      setUser(user);
-      setLoading(authLoading);
-    } catch (error) {
-      console.error('Firebase auth error:', error);
-      setLoading(false);
-    }
+    const initAuth = async () => {
+      try {
+        await firebaseAuthService.init();
+        
+        // Set up auth state listener
+        const unsubscribe = firebaseAuthService.onAuthStateChanged((user) => {
+          setUser(user);
+          setLoading(false);
+        });
+        
+        // Cleanup on unmount
+        return unsubscribe;
+      } catch (error) {
+        console.error('Firebase auth error:', error);
+        setLoading(false);
+      }
+    };
+
+    initAuth();
   }, [componentsLoaded, isClient]);
 
   // Load analyses from localStorage
@@ -99,178 +105,187 @@ export default function Home() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-blue-600 rounded-2xl mb-4">
             <Heart className="w-8 h-8 text-white" />
           </div>
-          <div className="loading-spinner w-8 h-8 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading Jivverr...</p>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-2">Jivverr</h1>
+          <p className="text-neutral-600 mb-6">Loading your medical assistant...</p>
+          <div className="loading-dots">
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // If user is not authenticated, show auth page
-  if (!user) {
-    return Auth ? <Auth user={user} setUser={setUser} /> : null;
-  }
-
-  // If user is authenticated, show main app with layout
-  return Layout ? (
-    <Layout user={user} setUser={setUser} currentPage={activeTab}>
-      {activeTab === 'dashboard' && Dashboard && (
-        <Dashboard analyses={analyses} />
-      )}
-      
-      {activeTab === 'analysis' && DiagnosisInput && (
-        <DiagnosisInput onAnalysisComplete={handleAnalysisComplete} />
-      )}
-      
-      {activeTab === 'history' && (
-        <div className="space-y-6">
-          <div className="card-elevated">
-            <div className="flex items-center gap-3 mb-6">
-              <Activity className="w-6 h-6 text-primary-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Analysis History</h2>
-            </div>
-            
-            {analyses.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Activity className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No history yet</h3>
-                <p className="text-gray-600 mb-6">Your medical analyses will appear here</p>
-                <button 
-                  onClick={() => setActiveTab('analysis')}
-                  className="btn-primary"
-                >
-                  Start First Analysis
-                </button>
+  // Render the app
+  return (
+    <div className="min-h-screen">
+      {!user ? (
+        <Auth user={user} setUser={setUser} />
+      ) : (
+        <Layout user={user} setUser={setUser} activeTab={activeTab} setActiveTab={setActiveTab}>
+          {activeTab === 'dashboard' && <Dashboard user={user} analyses={analyses} />}
+          {activeTab === 'diagnosis' && <DiagnosisInput onComplete={handleAnalysisComplete} />}
+          {activeTab === 'history' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-neutral-900">Analysis History</h1>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {analyses.map((analysis, index) => (
-                  <div key={index} className="analysis-result p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        {analysis.severity === 'moderate' ? (
-                          <div className="w-3 h-3 bg-warning-500 rounded-full"></div>
-                        ) : (
-                          <div className="w-3 h-3 bg-success-500 rounded-full"></div>
-                        )}
+              {analyses.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">
+                    <Stethoscope className="w-8 h-8 text-neutral-400" />
+                  </div>
+                  <h3 className="empty-state-title">No analyses yet</h3>
+                  <p className="empty-state-description">
+                    Start your first medical analysis to see your history here
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('diagnosis')}
+                    className="btn-primary"
+                  >
+                    Start First Analysis
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {analyses.map((analysis, index) => (
+                    <div key={index} className="analysis-result">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                            <Stethoscope className="w-5 h-5 text-primary-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-neutral-900">{analysis.diagnosis}</h3>
+                            <p className="text-sm text-neutral-600">
+                              {new Date(analysis.timestamp).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`status-${analysis.severity === 'moderate' ? 'warning' : 'success'}`}>
+                          {analysis.severity}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <span className={`status-badge ${
-                            analysis.severity === 'moderate' ? 'status-warning' : 'status-success'
-                          }`}>
-                            {analysis.severity.charAt(0).toUpperCase() + analysis.severity.slice(1)}
-                          </span>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(analysis.timestamp).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
+                          <p className="text-sm font-medium text-neutral-700 mb-1">Symptoms</p>
+                          <p className="text-sm text-neutral-600">{analysis.symptoms}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-700 mb-1">AI Explanation</p>
+                          <p className="text-sm text-neutral-600">{analysis.explanation}</p>
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === 'profile' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-neutral-900">Profile</h1>
+              </div>
+              <div className="card-elevated">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 bg-gradient-medical rounded-full flex items-center justify-center text-white text-xl font-semibold">
+                    {user.displayName ? user.displayName[0].toUpperCase() : user.email[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-neutral-900">
+                      {user.displayName || 'User'}
+                    </h2>
+                    <p className="text-neutral-600">{user.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold text-neutral-900 mb-3">Account Information</h3>
+                    <div className="space-y-3">
                       <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">Symptoms</p>
-                        <p className="text-sm text-gray-600">{analysis.symptoms}</p>
+                        <label className="text-sm font-medium text-neutral-700">Email</label>
+                        <p className="text-sm text-neutral-600">{user.email}</p>
                       </div>
-                      
                       <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">Diagnosis</p>
-                        <p className="text-sm text-gray-600">{analysis.diagnosis}</p>
+                        <label className="text-sm font-medium text-neutral-700">Account Created</label>
+                        <p className="text-sm text-neutral-600">
+                          {user.metadata?.creationTime ? 
+                            new Date(user.metadata.creationTime).toLocaleDateString() : 
+                            'Unknown'
+                          }
+                        </p>
                       </div>
-                    </div>
-                    
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-sm font-medium text-gray-700 mb-1">AI Explanation</p>
-                      <p className="text-sm text-gray-600">{analysis.explanation}</p>
+                      <div>
+                        <label className="text-sm font-medium text-neutral-700">Last Sign In</label>
+                        <p className="text-sm text-neutral-600">
+                          {user.metadata?.lastSignInTime ? 
+                            new Date(user.metadata.lastSignInTime).toLocaleDateString() : 
+                            'Unknown'
+                          }
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {activeTab === 'profile' && (
-        <div className="space-y-6">
-          <div className="card-elevated">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                <Stethoscope className="w-5 h-5 text-primary-600" />
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900">Profile</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  value={user.email}
-                  disabled
-                  className="input-field bg-gray-50"
-                />
-              </div>
-              
-              <div>
-                <label className="form-label">Member Since</label>
-                <input
-                  type="text"
-                  value={user.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'N/A'}
-                  disabled
-                  className="input-field bg-gray-50"
-                />
-              </div>
-              
-              <div>
-                <label className="form-label">Total Analyses</label>
-                <input
-                  type="text"
-                  value={analyses.length}
-                  disabled
-                  className="input-field bg-gray-50"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {activeTab === 'settings' && (
-        <div className="space-y-6">
-          <div className="card-elevated">
-            <div className="flex items-center gap-3 mb-6">
-              <Shield className="w-6 h-6 text-primary-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-success-50 rounded-xl">
-                <div>
-                  <p className="font-medium text-success-700">Data Privacy</p>
-                  <p className="text-sm text-success-600">Your data is encrypted and secure</p>
+                  <div>
+                    <h3 className="font-semibold text-neutral-900 mb-3">Statistics</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-neutral-600">Total Analyses</span>
+                        <span className="text-sm font-semibold text-neutral-900">{analyses.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-neutral-600">This Month</span>
+                        <span className="text-sm font-semibold text-neutral-900">
+                          {analyses.filter(a => {
+                            const date = new Date(a.timestamp);
+                            const now = new Date();
+                            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                          }).length}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-3 h-3 bg-success-500 rounded-full"></div>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl">
-                <div>
-                  <p className="font-medium text-primary-700">AI Processing</p>
-                  <p className="text-sm text-primary-600">Advanced AI for accurate explanations</p>
-                </div>
-                <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-neutral-900">Settings</h1>
+              </div>
+              <div className="card-elevated">
+                <h3 className="font-semibold text-neutral-900 mb-4">Application Settings</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-neutral-900">Notifications</h4>
+                      <p className="text-sm text-neutral-600">Receive health reminders and updates</p>
+                    </div>
+                    <button className="btn-secondary">Enable</button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-neutral-900">Data Privacy</h4>
+                      <p className="text-sm text-neutral-600">Manage your health data privacy</p>
+                    </div>
+                    <button className="btn-secondary">Configure</button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-neutral-900">Export Data</h4>
+                      <p className="text-sm text-neutral-600">Download your health analysis history</p>
+                    </div>
+                    <button className="btn-secondary">Export</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </Layout>
       )}
-    </Layout>
-  ) : null;
+    </div>
+  );
 }
