@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Mail, Lock, LogOut, Heart, Shield, Eye, EyeOff, Phone } from 'lucide-react';
+import firebaseAuthService from '../firebase/auth';
 
 export default function Auth({ user, setUser }) {
   const [email, setEmail] = useState('');
@@ -9,62 +10,74 @@ export default function Auth({ user, setUser }) {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
-  const [auth, setAuth] = useState(null);
+  const [displayName, setDisplayName] = useState('');
 
-  // Initialize Firebase auth on client side
+  // Initialize Firebase auth and set up auth state listener
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const { getAuth } = await import('firebase/auth');
-        const { app } = await import('../firebase/init');
-        if (app) {
-          setAuth(getAuth(app));
-        }
+        await firebaseAuthService.init();
+        
+        // Set up auth state listener
+        const unsubscribe = firebaseAuthService.onAuthStateChanged((user) => {
+          setUser(user);
+        });
+        
+        // Cleanup on unmount
+        return unsubscribe;
       } catch (error) {
         console.error('Error initializing auth:', error);
+        setError('Failed to initialize authentication. Please refresh the page.');
       }
     };
 
     if (typeof window !== 'undefined') {
       initAuth();
     }
-  }, []);
+  }, [setUser]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    if (!auth) return;
-    
     setLoading(true);
     setError('');
 
     try {
-      const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+      let result;
       
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        result = await firebaseAuthService.signUpWithEmail(email, password, displayName);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        result = await firebaseAuthService.signInWithEmail(email, password);
+      }
+      
+      if (result.success) {
+        // Auth state listener will handle setting the user
+        setEmail('');
+        setPassword('');
+        setDisplayName('');
+      } else {
+        setError(result.error.message);
       }
     } catch (error) {
-      setError(error.message);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSignOut = async () => {
-    if (!auth) return;
-    
     try {
-      const { signOut } = await import('firebase/auth');
-      await signOut(auth);
+      const result = await firebaseAuthService.signOut();
+      if (!result.success) {
+        console.error('Sign out error:', result.error);
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
   const handlePhoneSuccess = (phoneUser) => {
-    setUser(phoneUser);
+    // Auth state listener will handle setting the user
   };
 
   if (user) {
@@ -72,7 +85,12 @@ export default function Auth({ user, setUser }) {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <User className="w-5 h-5 text-primary-600" />
-          <span className="text-sm font-medium">{user.email || user.phoneNumber}</span>
+          <span className="text-sm font-medium">
+            {user.displayName || user.email || user.phoneNumber}
+          </span>
+          {firebaseAuthService.isEmailVerified() && (
+            <span className="status-success text-xs">✓ Verified</span>
+          )}
         </div>
         <button
           onClick={handleSignOut}
@@ -161,6 +179,19 @@ export default function Auth({ user, setUser }) {
           </div>
           
           <form onSubmit={handleAuth} className="space-y-4">
+            {isSignUp && (
+              <div className="form-group">
+                <label className="form-label">Full Name (Optional)</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="input-field"
+                  placeholder="Enter your full name"
+                />
+              </div>
+            )}
+            
             <div className="form-group">
               <label className="form-label">Email Address</label>
               <div className="relative">
@@ -187,6 +218,7 @@ export default function Auth({ user, setUser }) {
                   className="input-field pl-12 pr-12"
                   placeholder="Enter your password"
                   required
+                  minLength={6}
                 />
                 <button
                   type="button"
@@ -196,6 +228,9 @@ export default function Auth({ user, setUser }) {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {isSignUp && (
+                <p className="form-help">Password must be at least 6 characters long</p>
+              )}
             </div>
 
             {error && (
@@ -209,7 +244,7 @@ export default function Auth({ user, setUser }) {
 
             <button
               type="submit"
-              disabled={loading || !auth}
+              disabled={loading || !email || !password || (isSignUp && password.length < 6)}
               className="btn-primary w-full flex items-center justify-center gap-2 py-4"
             >
               {loading ? (
@@ -228,7 +263,13 @@ export default function Auth({ user, setUser }) {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError('');
+                setEmail('');
+                setPassword('');
+                setDisplayName('');
+              }}
               className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors"
             >
               {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}

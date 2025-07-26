@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { Phone, MessageSquare, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
+import firebaseAuthService from "../firebase/auth";
 
 export default function PhoneAuth({ onSuccess, onBack }) {
   const [phone, setPhone] = useState("");
@@ -11,8 +11,6 @@ export default function PhoneAuth({ onSuccess, onBack }) {
   const [countdown, setCountdown] = useState(0);
   const recaptchaRef = useRef(null);
 
-  const auth = getAuth();
-
   // Countdown timer for resend code
   useEffect(() => {
     if (countdown > 0) {
@@ -21,41 +19,28 @@ export default function PhoneAuth({ onSuccess, onBack }) {
     }
   }, [countdown]);
 
-  // Initialize reCAPTCHA only once
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        recaptchaRef.current,
-        {
-          size: "invisible",
-          callback: (response) => {
-            // reCAPTCHA solved
-          },
-        },
-        auth
-      );
-    }
-  };
-
   const sendCode = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     
     try {
-      setupRecaptcha();
-      const appVerifier = window.recaptchaVerifier;
-      const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
-      window.confirmationResult = confirmationResult;
-      setStep("code");
-      setCountdown(60); // 60 second countdown
-    } catch (err) {
-      setError(err.message);
-      // Reset reCAPTCHA on error
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
+      // Setup reCAPTCHA
+      const recaptchaResult = await firebaseAuthService.setupRecaptcha('recaptcha-container');
+      if (!recaptchaResult.success) {
+        throw new Error(recaptchaResult.error.message);
       }
+      
+      // Send verification code
+      const result = await firebaseAuthService.sendPhoneVerificationCode(phone);
+      if (result.success) {
+        setStep("code");
+        setCountdown(60); // 60 second countdown
+      } else {
+        setError(result.error.message);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to send verification code');
     }
     setLoading(false);
   };
@@ -66,13 +51,17 @@ export default function PhoneAuth({ onSuccess, onBack }) {
     setError("");
     
     try {
-      const result = await window.confirmationResult.confirm(code);
-      setStep("success");
-      if (onSuccess) {
-        onSuccess(result.user);
+      const result = await firebaseAuthService.verifyPhoneCode(code);
+      if (result.success) {
+        setStep("success");
+        if (onSuccess) {
+          onSuccess(result.user);
+        }
+      } else {
+        setError(result.error.message);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to verify code');
     }
     setLoading(false);
   };
@@ -84,17 +73,21 @@ export default function PhoneAuth({ onSuccess, onBack }) {
     setError("");
     
     try {
-      setupRecaptcha();
-      const appVerifier = window.recaptchaVerifier;
-      const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
-      window.confirmationResult = confirmationResult;
-      setCountdown(60);
-    } catch (err) {
-      setError(err.message);
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
+      // Setup reCAPTCHA again
+      const recaptchaResult = await firebaseAuthService.setupRecaptcha('recaptcha-container');
+      if (!recaptchaResult.success) {
+        throw new Error(recaptchaResult.error.message);
       }
+      
+      // Resend verification code
+      const result = await firebaseAuthService.sendPhoneVerificationCode(phone);
+      if (result.success) {
+        setCountdown(60);
+      } else {
+        setError(result.error.message);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to resend code');
     }
     setLoading(false);
   };
