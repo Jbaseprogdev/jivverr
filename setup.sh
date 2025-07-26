@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Setting up Medalyzer Web..."
+echo "🚀 Setting up Jivverr..."
 
 # Check if Homebrew is installed
 if ! command -v brew &> /dev/null; then

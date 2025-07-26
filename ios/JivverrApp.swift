@@ -3,7 +3,7 @@ import Firebase
 import FirebaseAuth
 
 @main
-struct MedalyzerApp: App {
+struct JivverrApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authState = AuthStateManager()
 
@@ -85,7 +85,7 @@ class AuthStateManager: ObservableObject {
 }
 
 // Preview
-struct MedalyzerApp_Previews: PreviewProvider {
+struct JivverrApp_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
             .environmentObject(AuthStateManager())

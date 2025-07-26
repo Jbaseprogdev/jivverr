@@ -14,7 +14,7 @@ struct DashboardView: View {
                     VStack(spacing: 24) {
                         // Welcome Header
                         VStack(spacing: 8) {
-                            Text("Welcome to Medalyzer")
+                            Text("Welcome to Jivverr")
                                 .font(.title)
                                 .fontWeight(.bold)
                             

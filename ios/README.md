@@ -1,4 +1,4 @@
-# Medalyzer iOS App
+# Jivverr iOS App
 
 A native iOS application for medical diagnosis explanations, built with SwiftUI and Firebase.
 
@@ -22,8 +22,8 @@ A native iOS application for medical diagnosis explanations, built with SwiftUI 
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Jbaseprogdev/medalyzer-vercel.git
-cd medalyzer-vercel/ios
+git clone https://github.com/Jbaseprogdev/jivverr.git
+cd jivverr/ios
 ```
 
 ### 2. Firebase Configuration
@@ -35,7 +35,7 @@ cd medalyzer-vercel/ios
 
 2. **Add iOS App**:
    - In Firebase Console, click "Add app" → iOS
-   - Enter your Bundle ID (e.g., `com.yourcompany.medalyzer`)
+   - Enter your Bundle ID (e.g., `com.yourcompany.jivverr`)
    - Download `GoogleService-Info.plist`
 
 3. **Configure Firebase**:
@@ -55,7 +55,7 @@ The app uses Swift Package Manager for dependencies. Add these in Xcode:
 
 ### 4. Build and Run
 
-1. Open `Medalyzer.xcodeproj` in Xcode
+1. Open `Jivverr.xcodeproj` in Xcode
 2. Select your target device or simulator
 3. Press `Cmd + R` to build and run
 
@@ -63,7 +63,7 @@ The app uses Swift Package Manager for dependencies. Add these in Xcode:
 
 ```
 ios/
-├── Medalyzer/
+├── Jivverr/
 │   ├── Views/
 │   │   ├── LoginView.swift          # Authentication UI
 │   │   ├── DashboardView.swift      # Main dashboard
@@ -78,7 +78,7 @@ ios/
 │   └── Resources/
 │       ├── Assets.xcassets          # App icons and images
 │       └── GoogleService-Info.plist # Firebase config
-├── Medalyzer.xcodeproj              # Xcode project file
+├── Jivverr.xcodeproj              # Xcode project file
 └── README.md                        # This file
 ```
 
@@ -173,7 +173,7 @@ struct MedicalAnalysis: Identifiable {
 ### Unit Tests
 ```bash
 # Run unit tests
-xcodebuild test -scheme Medalyzer -destination 'platform=iOS Simulator,name=iPhone 14'
+xcodebuild test -scheme Jivverr -destination 'platform=iOS Simulator,name=iPhone 14'
 ```
 
 ### UI Tests

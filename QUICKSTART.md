@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-## 🚀 Get Medalyzer Web Running in 5 Minutes
+## 🚀 Get Jivverr Running in 5 Minutes
 
 ### Prerequisites
 - macOS (for automatic setup)
