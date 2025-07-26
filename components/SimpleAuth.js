@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { initializeApp, getApps } from 'firebase/app';
-import { firebaseConfig } from '../firebase/config';
+import { getFirebaseApp } from '../firebase/init';
 import { User, Mail, Lock, LogOut, Heart, Shield, Eye, EyeOff, Phone } from 'lucide-react';
 
 export default function SimpleAuth({ user, setUser }) {
@@ -20,17 +19,9 @@ export default function SimpleAuth({ user, setUser }) {
       try {
         console.log('SimpleAuth: Initializing Firebase...');
         
-        // Check if Firebase is already initialized
-        const apps = getApps();
-        let app;
-        
-        if (apps.length === 0) {
-          console.log('SimpleAuth: Creating new Firebase app...');
-          app = initializeApp(firebaseConfig);
-        } else {
-          console.log('SimpleAuth: Using existing Firebase app...');
-          app = apps[0];
-        }
+        // Use the proper async getFirebaseApp function
+        const app = await getFirebaseApp();
+        console.log('SimpleAuth: Firebase app retrieved:', app.name);
         
         // Get auth instance
         const authInstance = getAuth(app);

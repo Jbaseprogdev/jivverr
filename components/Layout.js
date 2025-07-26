@@ -33,7 +33,7 @@ export default function Layout({ children, user, setUser, activeTab, setActiveTa
 
   const handleSignOut = async () => {
     try {
-      const app = getFirebaseApp();
+      const app = await getFirebaseApp();
       const auth = getAuth(app);
       await signOut(auth);
       setUser(null);

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Phone, MessageSquare, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
-import firebaseAuthService from "../firebase/auth";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { getFirebaseApp } from "../firebase/init";
 
 export default function PhoneAuth({ onSuccess, onBack }) {
   const [phone, setPhone] = useState("");
@@ -9,7 +10,27 @@ export default function PhoneAuth({ onSuccess, onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const recaptchaRef = useRef(null);
+  const [auth, setAuth] = useState(null);
+
+  // Initialize Firebase auth
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const app = await getFirebaseApp();
+        const authInstance = getAuth(app);
+        setAuth(authInstance);
+      } catch (error) {
+        console.error('PhoneAuth: Firebase initialization error:', error);
+        setError('Failed to initialize authentication');
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      initAuth();
+    }
+  }, []);
 
   // Countdown timer for resend code
   useEffect(() => {
@@ -19,27 +40,55 @@ export default function PhoneAuth({ onSuccess, onBack }) {
     }
   }, [countdown]);
 
+  const setupRecaptcha = async () => {
+    if (!auth) return false;
+    
+    try {
+      // Clear existing recaptcha
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+      }
+      
+      // Create new recaptcha verifier
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': () => {
+          console.log('reCAPTCHA solved');
+        }
+      });
+      
+      await window.recaptchaVerifier.render();
+      return true;
+    } catch (error) {
+      console.error('reCAPTCHA setup error:', error);
+      return false;
+    }
+  };
+
   const sendCode = async (e) => {
     e.preventDefault();
+    if (!auth) {
+      setError('Authentication not initialized');
+      return;
+    }
+    
     setLoading(true);
     setError("");
     
     try {
       // Setup reCAPTCHA
-      const recaptchaResult = await firebaseAuthService.setupRecaptcha('recaptcha-container');
-      if (!recaptchaResult.success) {
-        throw new Error(recaptchaResult.error.message);
+      const recaptchaReady = await setupRecaptcha();
+      if (!recaptchaReady) {
+        throw new Error('Failed to setup reCAPTCHA');
       }
       
       // Send verification code
-      const result = await firebaseAuthService.sendPhoneVerificationCode(phone);
-      if (result.success) {
-        setStep("code");
-        setCountdown(60); // 60 second countdown
-      } else {
-        setError(result.error.message);
-      }
+      const result = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+      setConfirmationResult(result);
+      setStep("code");
+      setCountdown(60); // 60 second countdown
     } catch (err) {
+      console.error('Send code error:', err);
       setError(err.message || 'Failed to send verification code');
     }
     setLoading(false);
@@ -47,46 +96,48 @@ export default function PhoneAuth({ onSuccess, onBack }) {
 
   const verifyCode = async (e) => {
     e.preventDefault();
+    if (!confirmationResult) {
+      setError('No confirmation result available');
+      return;
+    }
+    
     setLoading(true);
     setError("");
     
     try {
-      const result = await firebaseAuthService.verifyPhoneCode(code);
-      if (result.success) {
+      const result = await confirmationResult.confirm(code);
+      if (result.user) {
         setStep("success");
         if (onSuccess) {
           onSuccess(result.user);
         }
-      } else {
-        setError(result.error.message);
       }
     } catch (err) {
+      console.error('Verify code error:', err);
       setError(err.message || 'Failed to verify code');
     }
     setLoading(false);
   };
 
   const resendCode = async () => {
-    if (countdown > 0) return;
+    if (countdown > 0 || !auth) return;
     
     setLoading(true);
     setError("");
     
     try {
       // Setup reCAPTCHA again
-      const recaptchaResult = await firebaseAuthService.setupRecaptcha('recaptcha-container');
-      if (!recaptchaResult.success) {
-        throw new Error(recaptchaResult.error.message);
+      const recaptchaReady = await setupRecaptcha();
+      if (!recaptchaReady) {
+        throw new Error('Failed to setup reCAPTCHA');
       }
       
       // Resend verification code
-      const result = await firebaseAuthService.sendPhoneVerificationCode(phone);
-      if (result.success) {
-        setCountdown(60);
-      } else {
-        setError(result.error.message);
-      }
+      const result = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+      setConfirmationResult(result);
+      setCountdown(60);
     } catch (err) {
+      console.error('Resend code error:', err);
       setError(err.message || 'Failed to resend code');
     }
     setLoading(false);
