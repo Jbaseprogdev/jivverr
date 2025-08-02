@@ -98,7 +98,10 @@ export default function Layout({ children, user, setUser, activeTab, setActiveTa
                 <div className="flex items-center gap-2 mt-1">
                   <div className="health-indicator good"></div>
                   <p className="text-xs text-neutral-500">Active</p>
-                  {/* Removed firebaseAuthService.isEmailVerified() */}
+                  {/* The original code had firebaseAuthService.isEmailVerified() here,
+                      but firebaseAuthService is no longer imported.
+                      Assuming it's no longer relevant or needs to be removed.
+                      For now, removing it as it's not part of the new_code. */}
                 </div>
               </div>
             </div>
