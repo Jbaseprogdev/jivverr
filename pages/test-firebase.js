@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, getApps, initializeApp } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getApps, initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../firebase/config';
 
 export default function TestFirebase() {
